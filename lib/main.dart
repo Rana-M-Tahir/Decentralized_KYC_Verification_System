@@ -85,9 +85,9 @@ class _Splash_ScreenState extends State<Splash_Screen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Image.asset(
-                'assets/images/Nexuslogo.png', // make sure your image is inside assets folder
-                width: 250,
-                height: 250,
+                'assets/images/logo.png', // make sure your image is inside assets folder
+                width: 150,
+                height: 150,
               ),
               const SizedBox(
                 height: 20,
