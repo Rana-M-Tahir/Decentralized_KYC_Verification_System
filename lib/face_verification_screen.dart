@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:nexus_kyt/camera_capture_provider.dart';
-import 'package:nexus_kyt/home_screen.dart';
+import 'package:nexus_kyt/dashboard_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import 'background_video_provider.dart';
@@ -16,7 +16,6 @@ class FaceVerificationScreen extends StatefulWidget {
 
 class _FaceVerificationScreenState extends State<FaceVerificationScreen> {
   File? _faceImage;
-  final ImagePicker _picker = ImagePicker();
 
   Future<void> _captureFace() async {
     final File? faceFile = await Navigator.push<File?>(
@@ -36,18 +35,15 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen> {
     final videoProvider = Provider.of<BackgroundVideoProvider>(context);
 
     return Scaffold(
+      backgroundColor: Colors.black,
       body: Stack(
         children: [
           // 🎬 Background video
           if (videoProvider.isInitialized && videoProvider.controller != null)
-            SizedBox.expand(
-              child: FittedBox(
-                fit: BoxFit.cover,
-                child: SizedBox(
-                  width: videoProvider.controller!.value.size.width,
-                  height: videoProvider.controller!.value.size.height,
-                  child: VideoPlayer(videoProvider.controller!),
-                ),
+            Positioned.fill(
+              child: Video(
+                controller: videoProvider.controller!,
+                fit: BoxFit.cover, // same as FittedBox cover
               ),
             ),
 
@@ -97,35 +93,39 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen> {
                       ),
                       child: _faceImage == null
                           ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    width: MediaQuery.of(context).size.width *
-                                        0.45,
-                                    height: MediaQuery.of(context).size.width *
-                                        0.45,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                          color: Colors.blue, width: 2),
-                                    ),
-                                    child: const Icon(
-                                      Icons.person,
-                                      color: Colors.white,
-                                      size: 80,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  const Text(
-                                    "Tap to Capture Your Face",
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final circleSize =
+                                      constraints.maxHeight * 0.6;
+                                  return Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        width: circleSize,
+                                        height: circleSize,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                              color: Colors.blue, width: 2),
+                                        ),
+                                        child: const Icon(
+                                          Icons.person,
+                                          color: Colors.white,
+                                          size: 80,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 20),
+                                      const Text(
+                                        "Tap to Capture Your Face",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
                               ),
                             )
                           : Center(
@@ -211,7 +211,7 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen> {
                                   const Duration(milliseconds: 250),
                               pageBuilder:
                                   (context, animation, secondaryAnimation) =>
-                                      home_screen(),
+                                      const DashboardScreen(),
                               transitionsBuilder: (context, animation,
                                   secondaryAnimation, child) {
                                 const begin = Offset(1.0, 0.0);

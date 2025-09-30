@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:nexus_kyt/face_verification_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
@@ -49,18 +50,15 @@ class _IdCardUploadScreenState extends State<IdCardUploadScreen> {
     final videoProvider = Provider.of<BackgroundVideoProvider>(context);
 
     return Scaffold(
+      backgroundColor: Colors.black,
       body: Stack(
         children: [
           // 🎬 Background video
           if (videoProvider.isInitialized && videoProvider.controller != null)
-            SizedBox.expand(
-              child: FittedBox(
-                fit: BoxFit.cover,
-                child: SizedBox(
-                  width: videoProvider.controller!.value.size.width,
-                  height: videoProvider.controller!.value.size.height,
-                  child: VideoPlayer(videoProvider.controller!),
-                ),
+            Positioned.fill(
+              child: Video(
+                controller: videoProvider.controller!,
+                fit: BoxFit.cover, // same as FittedBox cover
               ),
             ),
 

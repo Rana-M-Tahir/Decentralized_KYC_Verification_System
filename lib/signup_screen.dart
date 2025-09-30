@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:nexus_kyt/auth_provider.dart';
 import 'package:nexus_kyt/background_video_provider.dart';
 import 'package:nexus_kyt/login_screen.dart';
@@ -37,18 +38,13 @@ class _SignupScreenState extends State<signup_screen> {
       body: Stack(
         children: [
           // Background video
-          if (videoProvider.controller != null && videoProvider.isInitialized)
-            SizedBox.expand(
-              child: FittedBox(
-                fit: BoxFit.cover,
-                child: SizedBox(
-                  width: videoProvider.controller!.value.size.width,
-                  height: videoProvider.controller!.value.size.height,
-                  child: VideoPlayer(videoProvider.controller!),
-                ),
+          if (videoProvider.isInitialized && videoProvider.controller != null)
+            Positioned.fill(
+              child: Video(
+                controller: videoProvider.controller!,
+                fit: BoxFit.cover, // same as FittedBox cover
               ),
             ),
-
           // Signup form
           Center(
             child: SingleChildScrollView(

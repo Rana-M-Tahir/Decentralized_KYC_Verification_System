@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:nexus_kyt/auth_provider.dart';
 import 'package:nexus_kyt/background_video_provider.dart';
-import 'package:nexus_kyt/login_screen.dart';
+import 'package:nexus_kyt/dashboard_screen.dart';
 import 'package:provider/provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  MediaKit.ensureInitialized();
 
   SystemChrome.setEnabledSystemUIMode(
     SystemUiMode.manual,
@@ -44,7 +46,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: login_screen(),
+      home: DashboardScreen(),
     );
   }
 }
@@ -58,6 +60,6 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold();
+    return const Scaffold();
   }
 }

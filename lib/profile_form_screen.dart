@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:nexus_kyt/background_video_provider.dart';
 import 'package:nexus_kyt/id_card_screen.dart';
 import 'package:provider/provider.dart';
@@ -61,15 +62,11 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
         color: Colors.black,
         child: Stack(
           children: [
-            if (videoProvider.controller != null && videoProvider.isInitialized)
+            if (videoProvider.isInitialized && videoProvider.controller != null)
               Positioned.fill(
-                child: FittedBox(
-                  fit: BoxFit.cover,
-                  child: SizedBox(
-                    width: videoProvider.controller!.value.size.width,
-                    height: videoProvider.controller!.value.size.height,
-                    child: VideoPlayer(videoProvider.controller!),
-                  ),
+                child: Video(
+                  controller: videoProvider.controller!,
+                  fit: BoxFit.cover, // same as FittedBox cover
                 ),
               ),
             SafeArea(

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:video_player/video_player.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 
 class BackgroundVideoProvider extends ChangeNotifier {
-  VideoPlayerController? _controller;
+  late final Player _player;
+  late final VideoController _controller;
   bool _isInitialized = false;
 
-  VideoPlayerController? get controller => _controller;
+  VideoController get controller => _controller;
   bool get isInitialized => _isInitialized;
 
   BackgroundVideoProvider() {
@@ -13,22 +15,23 @@ class BackgroundVideoProvider extends ChangeNotifier {
   }
 
   void _initVideo() async {
-    _controller =
-        VideoPlayerController.asset("assets/videos/blockchain_animation.mp4");
+    _player = Player();
+    _controller = VideoController(_player);
 
-    await _controller!.initialize();
-    _controller!
-      ..setLooping(true)
-      ..setPlaybackSpeed(0.9)
-      ..play();
+    await _player.open(
+      Media("assets/videos/blockchain_animation.mp4"),
+    );
+
+    _player.setPlaylistMode(PlaylistMode.loop);
+    _player.setRate(0.9); // playback speed
 
     _isInitialized = true;
-    notifyListeners(); // notify widgets that video is ready
+    notifyListeners();
   }
 
   @override
   void dispose() {
-    _controller?.dispose();
+    _player.dispose();
     super.dispose();
   }
 }
