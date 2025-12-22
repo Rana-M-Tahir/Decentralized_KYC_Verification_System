@@ -3,7 +3,6 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:nexus_kyt/auth_provider.dart';
 import 'package:nexus_kyt/background_video_provider.dart';
 import 'package:nexus_kyt/profile_form_screen.dart';
-import 'package:video_player/video_player.dart';
 import 'package:nexus_kyt/signup_screen.dart';
 import 'package:provider/provider.dart';
 
@@ -34,14 +33,15 @@ class _Login_ScreenState extends State<login_screen> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Background video
-          if (videoProvider.isInitialized && videoProvider.controller != null)
+          if (videoProvider.isInitialized)
             Positioned.fill(
               child: Video(
-                controller: videoProvider.controller!,
-                fit: BoxFit.cover, // same as FittedBox cover
+                controller: videoProvider.controller,
+                fit: BoxFit.cover,
               ),
-            ),
+            )
+          else
+            const Center(child: CircularProgressIndicator()),
 
           // Login form
           Center(

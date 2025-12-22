@@ -5,7 +5,7 @@ import 'package:nexus_kyt/background_video_provider.dart';
 import 'package:nexus_kyt/login_screen.dart';
 import 'package:nexus_kyt/profile_form_screen.dart';
 import 'package:provider/provider.dart';
-import 'package:video_player/video_player.dart';
+
 
 class signup_screen extends StatefulWidget {
   const signup_screen({super.key});
@@ -38,13 +38,16 @@ class _SignupScreenState extends State<signup_screen> {
       body: Stack(
         children: [
           // Background video
-          if (videoProvider.isInitialized && videoProvider.controller != null)
+          if (videoProvider.isInitialized)
             Positioned.fill(
               child: Video(
-                controller: videoProvider.controller!,
-                fit: BoxFit.cover, // same as FittedBox cover
+                controller: videoProvider.controller,
+                fit: BoxFit.cover,
               ),
-            ),
+            )
+          else
+            const Center(child: CircularProgressIndicator()),
+
           // Signup form
           Center(
             child: SingleChildScrollView(

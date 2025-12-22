@@ -4,7 +4,6 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:nexus_kyt/background_video_provider.dart';
 import 'package:nexus_kyt/id_card_screen.dart';
 import 'package:provider/provider.dart';
-import 'package:video_player/video_player.dart';
 
 class ProfileFormScreen extends StatefulWidget {
   const ProfileFormScreen({super.key});
@@ -62,13 +61,15 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
         color: Colors.black,
         child: Stack(
           children: [
-            if (videoProvider.isInitialized && videoProvider.controller != null)
+            if (videoProvider.isInitialized)
               Positioned.fill(
                 child: Video(
-                  controller: videoProvider.controller!,
-                  fit: BoxFit.cover, // same as FittedBox cover
+                  controller: videoProvider.controller,
+                  fit: BoxFit.cover,
                 ),
-              ),
+              )
+            else
+              const Center(child: CircularProgressIndicator()),
             SafeArea(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),

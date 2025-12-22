@@ -5,7 +5,7 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:nexus_kyt/face_verification_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
-import 'package:video_player/video_player.dart';
+
 import 'background_video_provider.dart';
 
 class IdCardUploadScreen extends StatefulWidget {
@@ -53,14 +53,15 @@ class _IdCardUploadScreenState extends State<IdCardUploadScreen> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // 🎬 Background video
-          if (videoProvider.isInitialized && videoProvider.controller != null)
+          if (videoProvider.isInitialized)
             Positioned.fill(
               child: Video(
-                controller: videoProvider.controller!,
-                fit: BoxFit.cover, // same as FittedBox cover
+                controller: videoProvider.controller,
+                fit: BoxFit.cover,
               ),
-            ),
+            )
+          else
+            const Center(child: CircularProgressIndicator()),
 
           // 🖊️ Foreground form
           SafeArea(

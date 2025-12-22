@@ -58,13 +58,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          if (videoProvider.isInitialized && videoProvider.controller != null)
+          if (videoProvider.isInitialized)
             Positioned.fill(
               child: Video(
-                controller: videoProvider.controller!,
+                controller: videoProvider.controller,
                 fit: BoxFit.cover,
               ),
-            ),
+            )
+          else
+            const Center(child: CircularProgressIndicator()),
           SafeArea(
             child: _buildBody(screenHeight, screenWidth, textScale),
           ),
@@ -229,7 +231,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           height: h * 0.22,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: walletAssets.length, 
+            itemCount: walletAssets.length,
             itemBuilder: (context, index) {
               final asset = walletAssets[index];
               return Container(
