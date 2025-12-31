@@ -56,21 +56,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Stack(
-        children: [
-          if (videoProvider.isInitialized)
-            Positioned.fill(
-              child: Video(
-                controller: videoProvider.controller,
-                fit: BoxFit.cover,
-              ),
-            )
-          else
-            const Center(child: CircularProgressIndicator()),
-          SafeArea(
-            child: _buildBody(screenHeight, screenWidth, textScale),
-          ),
-        ],
+      body: BlockchainBackground(
+        child: SafeArea(
+          child: _buildBody(screenHeight, screenWidth, textScale),
+        ),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,

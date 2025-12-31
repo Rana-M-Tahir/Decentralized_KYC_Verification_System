@@ -4,6 +4,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:nexus_kyt/auth_provider.dart';
 import 'package:nexus_kyt/background_video_provider.dart';
 import 'package:nexus_kyt/dashboard_screen.dart';
+import 'package:nexus_kyt/login_screen.dart';
 import 'package:provider/provider.dart';
 
 void main() {
@@ -46,7 +47,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: DashboardScreen(),
+      home: login_screen(),
     );
   }
 }

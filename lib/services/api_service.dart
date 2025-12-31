@@ -1,0 +1,141 @@
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:io';
+
+class ApiService {
+  static const String baseUrl = 'http://localhost:4000';
+  static const String registerEndpoint = '/api/auth/register';
+
+  static Map<String, String> _headers([String? token]) {
+    final headers = {
+      'Content-Type': 'application/json',
+    };
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    return headers;
+  }
+
+  // Register user with email, password, and name
+  static Future<Map<String, dynamic>> register({
+    required String email,
+    required String password,
+    required String name,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl$registerEndpoint'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+          'name': name,
+        }),
+      );
+
+      final jsonResponse = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'data': jsonResponse,
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonResponse['message'] ?? 'Registration failed',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Network error: $e',
+      };
+    }
+  }
+
+  // Submit identity/profile data to /api/identity/submit
+  static Future<Map<String, dynamic>> submitIdentity({
+    required Map<String, dynamic> data,
+    String? token,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/identity/submit'),
+        headers: _headers(token),
+        body: jsonEncode(data),
+      );
+
+      final jsonResponse = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'data': jsonResponse,
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonResponse['message'] ?? 'Submit failed',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Network error: $e',
+      };
+    }
+  }
+
+  // Upload documents to /api/upload/documents
+  static Future<Map<String, dynamic>> uploadDocuments({
+    required List<File> documents,
+    String? token,
+  }) async {
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/api/upload/documents'),
+      );
+
+      // Add authorization header if token exists
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      // Add all document files
+      for (File document in documents) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'documents',
+            document.path,
+          ),
+        );
+      }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      final jsonResponse = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'data': jsonResponse,
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonResponse['message'] ?? 'Upload failed',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Network error: $e',
+      };
+    }
+  }
+}

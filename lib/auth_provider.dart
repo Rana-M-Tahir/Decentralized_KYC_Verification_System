@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nexus_kyt/services/api_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
@@ -8,6 +9,7 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isLoggedIn => _token != null;
+  String? get token => _token;
 
   // Example login - replace with real API call
   Future<bool> login({required String email, required String password}) async {
@@ -34,19 +36,30 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // Example signup - replace with real API call
-  // Example signup - replace with real API call
   Future<bool> signup({
     required String email,
     required String password,
+    required String name,
   }) async {
     _setLoading(true);
     _error = null;
     try {
-      await Future.delayed(const Duration(seconds: 2));
-      // fake success
-      _token = "dummy_token";
-      notifyListeners();
-      return true;
+      final result = await ApiService.register(
+        email: email,
+        password: password,
+        name: name,
+      );
+
+      if (result['success']) {
+        // Extract token from nested response: data -> token
+        final data = result['data']['data'];
+        _token = data['token'];
+        notifyListeners();
+        return true;
+      } else {
+        _error = result['error'] ?? 'Signup failed';
+        return false;
+      }
     } catch (e) {
       _error = e.toString();
       return false;

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:nexus_kyt/auth_provider.dart';
 import 'package:nexus_kyt/background_video_provider.dart';
 import 'package:nexus_kyt/id_card_screen.dart';
+import 'package:nexus_kyt/services/api_service.dart';
 import 'package:provider/provider.dart';
 
 class ProfileFormScreen extends StatefulWidget {
@@ -19,6 +21,14 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
   String? disability;
 
   // ✅ Keep controllers here so they persist
+  // Profile fields
+  final TextEditingController fullNameController = TextEditingController();
+  final TextEditingController fatherNameController = TextEditingController();
+  final TextEditingController nationalIdController = TextEditingController();
+  final TextEditingController phoneNumberController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+
+  // Date of birth controllers
   final TextEditingController dayController = TextEditingController();
   final TextEditingController monthController = TextEditingController();
   final TextEditingController yearController = TextEditingController();
@@ -44,9 +54,28 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
   @override
   void dispose() {
     // ✅ Always dispose controllers
+    fullNameController.dispose();
+    fatherNameController.dispose();
+    nationalIdController.dispose();
+    phoneNumberController.dispose();
+    emailController.dispose();
     dayController.dispose();
     monthController.dispose();
     yearController.dispose();
+    currentStreet1.dispose();
+    currentStreet2.dispose();
+    currentCity.dispose();
+    currentRegion.dispose();
+    currentProvince.dispose();
+    currentPostal.dispose();
+    currentNationality.dispose();
+    permStreet1.dispose();
+    permStreet2.dispose();
+    permCity.dispose();
+    permRegion.dispose();
+    permProvince.dispose();
+    permPostal.dispose();
+    permNationality.dispose();
     super.dispose();
   }
 
@@ -57,465 +86,533 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: Colors.black,
-      body: Container(
-        color: Colors.black,
-        child: Stack(
-          children: [
-            if (videoProvider.isInitialized)
-              Positioned.fill(
-                child: Video(
-                  controller: videoProvider.controller,
-                  fit: BoxFit.cover,
+      body: BlockchainBackground(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Progress bar
+                LinearProgressIndicator(
+                  value: 0.33,
+                  backgroundColor: Colors.white24,
+                  valueColor: AlwaysStoppedAnimation(Colors.blue.shade400),
+                  minHeight: 6,
+                  borderRadius: BorderRadius.circular(10),
                 ),
-              )
-            else
-              const Center(child: CircularProgressIndicator()),
-            SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    // Progress bar
-                    LinearProgressIndicator(
-                      value: 0.33,
-                      backgroundColor: Colors.white24,
-                      valueColor: AlwaysStoppedAnimation(Colors.blue.shade400),
-                      minHeight: 6,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    const SizedBox(height: 10),
-                    const Text("Step 1 of 3",
-                        style: TextStyle(color: Colors.white)),
-                    const SizedBox(height: 20),
+                const SizedBox(height: 10),
+                const Text("Step 1 of 3",
+                    style: TextStyle(color: Colors.white)),
+                const SizedBox(height: 20),
 
-                    // Form container
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                // Form container
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Profile Detail",
+                            style: TextStyle(
+                                fontSize: 22, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        const Text("Please complete your personal information",
+                            style:
+                                TextStyle(color: Colors.black54, fontSize: 14)),
+                        const SizedBox(height: 20),
+
+                        // Full Name
+                        const Text("Full Name",
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        _buildTextField("Enter your full name",
+                            controller: fullNameController),
+
+                        const Text("Father's Name",
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        _buildTextField("Enter father's name",
+                            controller: fatherNameController),
+
+                        const Text("National Identity (CNIC/ID)",
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        _buildTextField("Enter CNIC/ID",
+                            controller: nationalIdController),
+
+                        const Text("Date of Birth",
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        Row(
                           children: [
-                            const Text("Profile Detail",
-                                style: TextStyle(
-                                    fontSize: 22, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 4),
+                            Expanded(
+                              child: _buildDateField(
+                                  context, "Day", dayController),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _buildDateField(
+                                  context, "Month", monthController),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _buildDateField(
+                                  context, "Year", yearController),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              onPressed: () async {
+                                DateTime? pickedDate = await showDatePicker(
+                                  context: context,
+                                  initialDate: DateTime(2000),
+                                  firstDate: DateTime(1900),
+                                  lastDate: DateTime(DateTime.now().year - 18,
+                                      12, 31), // must be 18+
+                                );
+
+                                if (pickedDate != null) {
+                                  setState(() {
+                                    dayController.text = pickedDate.day
+                                        .toString()
+                                        .padLeft(2, '0');
+                                    monthController.text = pickedDate.month
+                                        .toString()
+                                        .padLeft(2, '0');
+                                    yearController.text =
+                                        pickedDate.year.toString();
+                                  });
+                                }
+                              },
+                              icon: const Icon(Icons.calendar_today),
+                            ),
+                          ],
+                        ),
+
+                        const Text("Phone Number",
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        _buildTextField("Enter phone number",
+                            controller: phoneNumberController),
+
+                        const Text("Email",
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        _buildTextField("Enter email",
+                            controller: emailController),
+
+                        const SizedBox(height: 12),
+                        const Text("Gender",
+                            style: TextStyle(
+                                fontWeight: FontWeight.w600, fontSize: 16)),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => setState(() => gender = "Male"),
+                                child: Container(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: gender == "Male"
+                                        ? Color.fromARGB(255, 196, 228, 255)
+                                        : Colors.transparent,
+                                    border:
+                                        Border.all(color: Colors.blue.shade900),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Text("Male",
+                                      style: TextStyle(
+                                          fontSize: 16, color: Colors.black)),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => setState(() => gender = "Female"),
+                                child: Container(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: gender == "Female"
+                                        ? Color.fromARGB(255, 196, 228, 255)
+                                        : Colors.transparent,
+                                    border:
+                                        Border.all(color: Colors.blue.shade900),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Text("Female",
+                                      style: TextStyle(
+                                          fontSize: 16, color: Colors.black)),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => setState(() => gender = "Other"),
+                                child: Container(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: gender == "Other"
+                                        ? Color.fromARGB(255, 196, 228, 255)
+                                        : Colors.transparent,
+                                    border:
+                                        Border.all(color: Colors.blue.shade900),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Text("Other",
+                                      style: TextStyle(
+                                          fontSize: 16, color: Colors.black)),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 20),
+                        const Text("Current Address",
+                            style: TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold)),
+                        const Text("Street Address",
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        _buildTextField("Street Address",
+                            controller: currentStreet1),
+                        const Text("Street Address Line 2",
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        _buildTextField("Street Address Line 2",
+                            controller: currentStreet2),
+
+                        // City & Region
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text("City",
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w600)),
+                                  _buildTextField("City",
+                                      controller: currentCity),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text("Region",
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w600)),
+                                  _buildTextField("Region",
+                                      controller: currentRegion),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text("Province",
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w600)),
+                                  _buildTextField("Province",
+                                      controller: currentProvince),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text("Postal Code",
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w600)),
+                                  _buildTextField("Postal Code",
+                                      controller: currentPostal,
+                                      isNumber: true),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const Text("Nationality",
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        _buildTextField("Nationality",
+                            controller: currentNationality),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
                             const Text(
-                                "Please complete your personal information",
-                                style: TextStyle(
-                                    color: Colors.black54, fontSize: 14)),
-                            const SizedBox(height: 20),
-
-                            // Full Name
-                            const Text("Full Name",
-                                style: TextStyle(fontWeight: FontWeight.w600)),
-                            _buildTextField("Enter your full name"),
-
-                            const Text("Father's Name",
-                                style: TextStyle(fontWeight: FontWeight.w600)),
-                            _buildTextField("Enter father's name"),
-
-                            const Text("National Identity (CNIC/ID)",
-                                style: TextStyle(fontWeight: FontWeight.w600)),
-                            _buildTextField("Enter CNIC/ID"),
-
-                            const Text("Date of Birth",
-                                style: TextStyle(fontWeight: FontWeight.w600)),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildDateField(
-                                      context, "Day", dayController),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: _buildDateField(
-                                      context, "Month", monthController),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: _buildDateField(
-                                      context, "Year", yearController),
-                                ),
-                                const SizedBox(width: 8),
-                                IconButton(
-                                  onPressed: () async {
-                                    DateTime? pickedDate = await showDatePicker(
-                                      context: context,
-                                      initialDate: DateTime(2000),
-                                      firstDate: DateTime(1900),
-                                      lastDate: DateTime(
-                                          DateTime.now().year - 18,
-                                          12,
-                                          31), // must be 18+
-                                    );
-
-                                    if (pickedDate != null) {
-                                      setState(() {
-                                        dayController.text = pickedDate.day
-                                            .toString()
-                                            .padLeft(2, '0');
-                                        monthController.text = pickedDate.month
-                                            .toString()
-                                            .padLeft(2, '0');
-                                        yearController.text =
-                                            pickedDate.year.toString();
-                                      });
-                                    }
-                                  },
-                                  icon: const Icon(Icons.calendar_today),
-                                ),
-                              ],
+                              "Permanent Address",
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.w600),
                             ),
+                            Switch(
+                              value: sameAsCurrent,
+                              activeColor: Colors.blue.shade900,
+                              onChanged: (value) {
+                                setState(() {
+                                  sameAsCurrent = value;
 
-                            const Text("Phone Number",
-                                style: TextStyle(fontWeight: FontWeight.w600)),
-                            _buildTextField("Enter phone number"),
-
-                            const Text("Email",
-                                style: TextStyle(fontWeight: FontWeight.w600)),
-                            _buildTextField("Enter email"),
-
-                            const SizedBox(height: 12),
-                            const Text("Gender",
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w600, fontSize: 16)),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                Expanded(
-                                  child: GestureDetector(
-                                    onTap: () =>
-                                        setState(() => gender = "Male"),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 14),
-                                      alignment: Alignment.center,
-                                      decoration: BoxDecoration(
-                                        color: gender == "Male"
-                                            ? Color.fromARGB(255, 196, 228, 255)
-                                            : Colors.transparent,
-                                        border: Border.all(
-                                            color: Colors.blue.shade900),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: const Text("Male",
-                                          style: TextStyle(
-                                              fontSize: 16,
-                                              color: Colors.black)),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: GestureDetector(
-                                    onTap: () =>
-                                        setState(() => gender = "Female"),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 14),
-                                      alignment: Alignment.center,
-                                      decoration: BoxDecoration(
-                                        color: gender == "Female"
-                                            ? Color.fromARGB(255, 196, 228, 255)
-                                            : Colors.transparent,
-                                        border: Border.all(
-                                            color: Colors.blue.shade900),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: const Text("Female",
-                                          style: TextStyle(
-                                              fontSize: 16,
-                                              color: Colors.black)),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: GestureDetector(
-                                    onTap: () =>
-                                        setState(() => gender = "Other"),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 14),
-                                      alignment: Alignment.center,
-                                      decoration: BoxDecoration(
-                                        color: gender == "Other"
-                                            ? Color.fromARGB(255, 196, 228, 255)
-                                            : Colors.transparent,
-                                        border: Border.all(
-                                            color: Colors.blue.shade900),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: const Text("Other",
-                                          style: TextStyle(
-                                              fontSize: 16,
-                                              color: Colors.black)),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 20),
-                            const Text("Current Address",
-                                style: TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.bold)),
-                            const Text("Street Address",
-                                style: TextStyle(fontWeight: FontWeight.w600)),
-                            _buildTextField("Street Address",
-                                controller: currentStreet1),
-                            const Text("Street Address Line 2",
-                                style: TextStyle(fontWeight: FontWeight.w600)),
-                            _buildTextField("Street Address Line 2",
-                                controller: currentStreet2),
-
-                            // City & Region
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text("City",
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.w600)),
-                                      _buildTextField("City",
-                                          controller: currentCity),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text("Region",
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.w600)),
-                                      _buildTextField("Region",
-                                          controller: currentRegion),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text("Province",
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.w600)),
-                                      _buildTextField("Province",
-                                          controller: currentProvince),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text("Postal Code",
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.w600)),
-                                      _buildTextField("Postal Code",
-                                          controller: currentPostal,
-                                          isNumber: true),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            const Text("Nationality",
-                                style: TextStyle(fontWeight: FontWeight.w600)),
-                            _buildTextField("Nationality",
-                                controller: currentNationality),
-
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  "Permanent Address",
-                                  style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600),
-                                ),
-                                Switch(
-                                  value: sameAsCurrent,
-                                  activeColor: Colors.blue.shade900,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      sameAsCurrent = value;
-
-                                      if (sameAsCurrent) {
-                                        // Copy current -> permanent
-                                        permStreet1.text = currentStreet1.text;
-                                        permStreet2.text = currentStreet2.text;
-                                        permCity.text = currentCity.text;
-                                        permRegion.text = currentRegion.text;
-                                        permProvince.text =
-                                            currentProvince.text;
-                                        permPostal.text = currentPostal.text;
-                                        permNationality.text =
-                                            currentNationality.text;
-                                      } else {
-                                        // Clear if unchecked
-                                        permStreet1.clear();
-                                        permStreet2.clear();
-                                        permCity.clear();
-                                        permRegion.clear();
-                                        permProvince.clear();
-                                        permPostal.clear();
-                                        permNationality.clear();
-                                      }
-                                    });
-                                  },
-                                ),
-                              ],
-                            ),
-
-                            const Text("Street Address",
-                                style: TextStyle(fontWeight: FontWeight.w600)),
-                            _buildTextField("Street Address",
-                                controller: permStreet1),
-                            const Text("Street Address Line 2",
-                                style: TextStyle(fontWeight: FontWeight.w600)),
-                            _buildTextField("Street Address Line 2",
-                                controller: permStreet2),
-
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text("City",
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.w600)),
-                                      _buildTextField("City",
-                                          controller: permCity),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text("Region",
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.w600)),
-                                      _buildTextField("Region",
-                                          controller: permRegion),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text("Province",
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.w600)),
-                                      _buildTextField("Province",
-                                          controller: permProvince),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text("Postal Code",
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.w600)),
-                                      _buildTextField("Postal Code",
-                                          controller: permPostal,
-                                          isNumber: true),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const Text("Nationality",
-                                style: TextStyle(fontWeight: FontWeight.w600)),
-                            _buildTextField("Nationality",
-                                controller: permNationality),
-
-                            const SizedBox(height: 20),
-                            const Text("Other",
-                                style: TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.bold)),
-                            _buildDropdown(
-                                "Marital Status",
-                                ["Single", "Married", "Divorced"],
-                                maritalStatus,
-                                (val) => setState(() => maritalStatus = val)),
-                            _buildDropdown(
-                                "Disability",
-                                ["None", "Yes"],
-                                disability,
-                                (val) => setState(() => disability = val)),
-
-                            const SizedBox(height: 16),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  if (_formKey.currentState!.validate()) {
-                                    Navigator.push(
-                                      context,
-                                      PageRouteBuilder(
-                                        transitionDuration:
-                                            const Duration(milliseconds: 250),
-                                        pageBuilder: (context, animation,
-                                                secondaryAnimation) =>
-                                            const IdCardUploadScreen(),
-                                        transitionsBuilder: (context, animation,
-                                            secondaryAnimation, child) {
-                                          const begin = Offset(1.0, 0.0);
-                                          const end = Offset.zero;
-                                          const curve = Curves.easeInOut;
-
-                                          final tween = Tween(
-                                                  begin: begin, end: end)
-                                              .chain(CurveTween(curve: curve));
-                                          final offsetAnimation =
-                                              animation.drive(tween);
-
-                                          return SlideTransition(
-                                            position: offsetAnimation,
-                                            child: child,
-                                          );
-                                        },
-                                      ),
-                                    );
+                                  if (sameAsCurrent) {
+                                    // Copy current -> permanent
+                                    permStreet1.text = currentStreet1.text;
+                                    permStreet2.text = currentStreet2.text;
+                                    permCity.text = currentCity.text;
+                                    permRegion.text = currentRegion.text;
+                                    permProvince.text = currentProvince.text;
+                                    permPostal.text = currentPostal.text;
+                                    permNationality.text =
+                                        currentNationality.text;
+                                  } else {
+                                    // Clear if unchecked
+                                    permStreet1.clear();
+                                    permStreet2.clear();
+                                    permCity.clear();
+                                    permRegion.clear();
+                                    permProvince.clear();
+                                    permPostal.clear();
+                                    permNationality.clear();
                                   }
-                                },
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+
+                        const Text("Street Address",
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        _buildTextField("Street Address",
+                            controller: permStreet1),
+                        const Text("Street Address Line 2",
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        _buildTextField("Street Address Line 2",
+                            controller: permStreet2),
+
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text("City",
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w600)),
+                                  _buildTextField("City", controller: permCity),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text("Region",
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w600)),
+                                  _buildTextField("Region",
+                                      controller: permRegion),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text("Province",
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w600)),
+                                  _buildTextField("Province",
+                                      controller: permProvince),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text("Postal Code",
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w600)),
+                                  _buildTextField("Postal Code",
+                                      controller: permPostal, isNumber: true),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Text("Nationality",
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        _buildTextField("Nationality",
+                            controller: permNationality),
+
+                        const SizedBox(height: 20),
+                        const Text("Other",
+                            style: TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold)),
+                        _buildDropdown(
+                            "Marital Status",
+                            ["Single", "Married", "Divorced"],
+                            maritalStatus,
+                            (val) => setState(() => maritalStatus = val)),
+                        _buildDropdown(
+                            "Disability",
+                            ["None", "Yes"],
+                            disability,
+                            (val) => setState(() => disability = val)),
+
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: Consumer<AuthProvider>(
+                            builder: (context, authProvider, child) {
+                              return ElevatedButton(
+                                onPressed: authProvider.isLoading
+                                    ? null
+                                    : () async {
+                                        if (_formKey.currentState!.validate()) {
+                                          // Collect all form data
+                                          final profileData = {
+                                            "fullName":
+                                                fullNameController.text.trim(),
+                                            "fatherName": fatherNameController
+                                                .text
+                                                .trim(),
+                                            "nationalIdentity":
+                                                nationalIdController.text
+                                                    .trim(),
+                                            "birthDay": dayController.text,
+                                            "birthMonth": monthController.text,
+                                            "birthYear": yearController.text,
+                                            "phoneNumber": phoneNumberController
+                                                .text
+                                                .trim(),
+                                            "email":
+                                                emailController.text.trim(),
+                                            "gender": gender ?? "",
+                                            "currentStreetAddress1":
+                                                currentStreet1.text.trim(),
+                                            "currentStreetAddress2":
+                                                currentStreet2.text.trim(),
+                                            "currentCity":
+                                                currentCity.text.trim(),
+                                            "currentRegion":
+                                                currentRegion.text.trim(),
+                                            "currentProvince":
+                                                currentProvince.text.trim(),
+                                            "currentPostalCode":
+                                                currentPostal.text.trim(),
+                                            "currentNationality":
+                                                currentNationality.text.trim(),
+                                            "permanentStreetAddress1":
+                                                permStreet1.text.trim(),
+                                            "permanentStreetAddress2":
+                                                permStreet2.text.trim(),
+                                            "permanentCity":
+                                                permCity.text.trim(),
+                                            "permanentRegion":
+                                                permRegion.text.trim(),
+                                            "permanentProvince":
+                                                permProvince.text.trim(),
+                                            "permanentPostalCode":
+                                                permPostal.text.trim(),
+                                            "permanentNationality":
+                                                permNationality.text.trim(),
+                                            "maritalStatus":
+                                                maritalStatus ?? "",
+                                            "disability": disability ?? "",
+                                          };
+
+                                          // Submit to API with token
+                                          final result =
+                                              await ApiService.submitIdentity(
+                                            data: profileData,
+                                            token: authProvider.token,
+                                          );
+
+                                          if (result['success']) {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                content: const Text(
+                                                    'Profile submitted successfully!'),
+                                                backgroundColor:
+                                                    Colors.green.shade700,
+                                              ),
+                                            );
+
+                                            // Navigate to next screen
+                                            if (mounted) {
+                                              Navigator.push(
+                                                context,
+                                                PageRouteBuilder(
+                                                  transitionDuration:
+                                                      const Duration(
+                                                          milliseconds: 250),
+                                                  pageBuilder: (context,
+                                                          animation,
+                                                          secondaryAnimation) =>
+                                                      const IdCardUploadScreen(),
+                                                  transitionsBuilder: (context,
+                                                      animation,
+                                                      secondaryAnimation,
+                                                      child) {
+                                                    const begin =
+                                                        Offset(1.0, 0.0);
+                                                    const end = Offset.zero;
+                                                    const curve =
+                                                        Curves.easeInOut;
+
+                                                    final tween = Tween(
+                                                            begin: begin,
+                                                            end: end)
+                                                        .chain(CurveTween(
+                                                            curve: curve));
+                                                    final offsetAnimation =
+                                                        animation.drive(tween);
+
+                                                    return SlideTransition(
+                                                      position: offsetAnimation,
+                                                      child: child,
+                                                    );
+                                                  },
+                                                ),
+                                              );
+                                            }
+                                          } else {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                content: Text(result['error'] ??
+                                                    'Failed to submit profile'),
+                                                backgroundColor:
+                                                    Colors.red.shade700,
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      },
                                 style: ElevatedButton.styleFrom(
                                   padding:
                                       EdgeInsets.zero, // remove default padding
@@ -545,26 +642,34 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                                     alignment: Alignment.center,
                                     height: MediaQuery.of(context).size.height *
                                         0.065,
-                                    child: const Text(
-                                      'Submit',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
+                                    child: authProvider.isLoading
+                                        ? const SizedBox(
+                                            height: 20,
+                                            width: 20,
+                                            child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Colors.white),
+                                          )
+                                        : const Text(
+                                            'Submit',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
                                   ),
                                 ),
-                              ),
-                            ),
-                          ],
+                              );
+                            },
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
