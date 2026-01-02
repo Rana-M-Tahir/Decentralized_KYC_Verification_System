@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:nexus_kyt/auth_provider.dart';
 import 'package:nexus_kyt/camera_capture_provider.dart';
 import 'package:nexus_kyt/dashboard_screen.dart';
 import 'package:provider/provider.dart';
@@ -16,6 +17,15 @@ class FaceVerificationScreen extends StatefulWidget {
 
 class _FaceVerificationScreenState extends State<FaceVerificationScreen> {
   File? _faceImage;
+
+  @override
+  void initState() {
+    super.initState();
+    // Mark that user is on FaceVerificationScreen
+    Future.microtask(() {
+      context.read<AuthProvider>().setCurrentScreen('face_verification');
+    });
+  }
 
   Future<void> _captureFace() async {
     final File? faceFile = await Navigator.push<File?>(

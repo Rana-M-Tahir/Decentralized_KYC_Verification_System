@@ -52,6 +52,15 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
   final TextEditingController permNationality = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    // Mark that user is on ProfileFormScreen
+    Future.microtask(() {
+      context.read<AuthProvider>().setCurrentScreen('profile_form');
+    });
+  }
+
+  @override
   void dispose() {
     // ✅ Always dispose controllers
     fullNameController.dispose();

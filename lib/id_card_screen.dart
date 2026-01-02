@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -22,33 +24,87 @@ class _IdCardUploadScreenState extends State<IdCardUploadScreen> {
   File? _backImage;
   final ImagePicker _picker = ImagePicker();
 
+  @override
+  void initState() {
+    super.initState();
+    // Mark that user is on IdCardUploadScreen
+    Future.microtask(() {
+      context.read<AuthProvider>().setCurrentScreen('id_card');
+    });
+  }
+
+  /// Build image widget that works on both web and mobile platforms
+  Widget _buildImageWidget(File imageFile) {
+    if (kIsWeb) {
+      // On web, read file as bytes and use Image.memory
+      return FutureBuilder<Uint8List>(
+        future: imageFile.readAsBytes(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            return Image.memory(
+              snapshot.data!,
+              fit: BoxFit.cover,
+              width: double.infinity,
+            );
+          } else if (snapshot.hasError) {
+            return const Center(
+              child: Icon(Icons.error, color: Colors.red),
+            );
+          }
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        },
+      );
+    } else {
+      // On mobile, use Image.file directly
+      return Image.file(
+        imageFile,
+        fit: BoxFit.cover,
+        width: double.infinity,
+      );
+    }
+  }
+
   Future<void> _pickImage(bool isFront) async {
     try {
-      // Request both photo and camera permissions
-      final photoStatus = await Permission.photos.request();
+      // Skip permission request on web platform
+      if (!kIsWeb) {
+        // Request photo/gallery permissions (mobile only)
+        PermissionStatus photoStatus;
+        
+        // For Android 13+ (API 33+), use READ_MEDIA_IMAGES
+        // For older Android, use READ_EXTERNAL_STORAGE
+        try {
+          photoStatus = await Permission.photos.request();
+        } catch (e) {
+          // Fallback to READ_EXTERNAL_STORAGE if photos permission fails
+          photoStatus = await Permission.storage.request();
+        }
 
-      if (photoStatus.isDenied) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Please allow gallery access to upload images"),
-              backgroundColor: Colors.red,
-            ),
-          );
+        if (photoStatus.isDenied) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("Please allow gallery access to upload images"),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
+        } else if (photoStatus.isPermanentlyDenied) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                    "Gallery permission is permanently denied. Please enable it in settings."),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          openAppSettings();
+          return;
         }
-        return;
-      } else if (photoStatus.isPermanentlyDenied) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                  "Gallery permission is permanently denied. Please enable it in settings."),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        openAppSettings();
-        return;
       }
 
       // Pick image from gallery
@@ -58,13 +114,26 @@ class _IdCardUploadScreenState extends State<IdCardUploadScreen> {
       );
 
       if (image != null && mounted) {
-        setState(() {
-          if (isFront) {
-            _frontImage = File(image.path);
-          } else {
-            _backImage = File(image.path);
-          }
-        });
+        if (kIsWeb) {
+          // For web, use the File constructor differently
+          // The image path on web is a URL, so we store it as is
+          setState(() {
+            if (isFront) {
+              _frontImage = File(image.path);
+            } else {
+              _backImage = File(image.path);
+            }
+          });
+        } else {
+          // For mobile platforms
+          setState(() {
+            if (isFront) {
+              _frontImage = File(image.path);
+            } else {
+              _backImage = File(image.path);
+            }
+          });
+        }
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -163,8 +232,7 @@ class _IdCardUploadScreenState extends State<IdCardUploadScreen> {
                             children: [
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(12),
-                                child: Image.file(_frontImage!,
-                                    fit: BoxFit.cover, width: double.infinity),
+                                child: _buildImageWidget(_frontImage!),
                               ),
                               Positioned(
                                 top: 8,
@@ -221,8 +289,7 @@ class _IdCardUploadScreenState extends State<IdCardUploadScreen> {
                             children: [
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(12),
-                                child: Image.file(_backImage!,
-                                    fit: BoxFit.cover, width: double.infinity),
+                                child: _buildImageWidget(_backImage!),
                               ),
                               Positioned(
                                 top: 8,

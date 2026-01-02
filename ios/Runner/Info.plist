@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs access to your photo library to upload your ID card and profile pictures for KYC verification.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs access to your camera for face verification and capturing ID documents.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>This app needs access to save photos from the camera to your photo library.</string>
 </dict>
 </plist>

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -49,6 +50,14 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
   }
 
   Future<void> _initCamera() async {
+    // Skip camera permission on web
+    if (kIsWeb) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Camera is not supported on web platform')));
+      if (mounted) Navigator.of(context).pop();
+      return;
+    }
+
     final status = await Permission.camera.request();
     if (!mounted) return;
     if (!status.isGranted) {

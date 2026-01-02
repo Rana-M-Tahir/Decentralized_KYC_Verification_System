@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:nexus_kyt/auth_provider.dart';
 import 'package:nexus_kyt/login_screen.dart';
 import 'package:provider/provider.dart';
 
@@ -14,6 +15,15 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Mark that user is on DashboardScreen
+    Future.microtask(() {
+      context.read<AuthProvider>().setCurrentScreen('dashboard');
+    });
+  }
 
   // ===== Mock Data =====
   String userName = "Rana Tahir";
