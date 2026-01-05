@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'dart:io';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:4000';
+  // Use the provided LAN IP for all API calls
+  static const String baseUrl = 'http://192.168.100.103:4000';
+
   static const String registerEndpoint = '/api/auth/register';
 
   static Map<String, String> _headers([String? token]) {
@@ -129,6 +131,58 @@ class ApiService {
         return {
           'success': false,
           'error': jsonResponse['message'] ?? 'Upload failed',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Network error: $e',
+      };
+    }
+  }
+
+  // Liveness verification to /api/verification/liveness
+  static Future<Map<String, dynamic>> verifyLiveness({
+    required File faceImage,
+    required String step,
+    String? token,
+  }) async {
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/api/verification/liveness'),
+      );
+
+      // Add authorization header if token exists
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      // Add step field
+      request.fields['step'] = step;
+
+      // Add face image file
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file',
+          faceImage.path,
+        ),
+      );
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      final jsonResponse = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'data': jsonResponse,
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonResponse['message'] ?? 'Verification failed',
         };
       }
     } catch (e) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nexus_kyt/services/api_service.dart';
+import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -128,6 +129,60 @@ class AuthProvider extends ChangeNotifier {
     _currentScreen = null;
     _clearAuthData();
     notifyListeners();
+  }
+
+  // Submit profile/identity data and manage loading state
+  Future<Map<String, dynamic>> submitProfile(
+      {required Map<String, dynamic> data}) async {
+    _setLoading(true);
+    _error = null;
+    try {
+      final result = await ApiService.submitIdentity(data: data, token: _token);
+      return result;
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Upload documents and manage loading state
+  Future<Map<String, dynamic>> uploadDocuments(
+      {required List<File> documents}) async {
+    _setLoading(true);
+    _error = null;
+    try {
+      final result = await ApiService.uploadDocuments(
+        documents: documents,
+        token: _token,
+      );
+      return result;
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Verify liveness and manage loading state
+  Future<Map<String, dynamic>> verifyLiveness({
+    required File faceImage,
+    required String step,
+  }) async {
+    _setLoading(true);
+    _error = null;
+    try {
+      final result = await ApiService.verifyLiveness(
+        faceImage: faceImage,
+        step: step,
+        token: _token,
+      );
+      return result;
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    } finally {
+      _setLoading(false);
+    }
   }
 
   void _setLoading(bool v) {

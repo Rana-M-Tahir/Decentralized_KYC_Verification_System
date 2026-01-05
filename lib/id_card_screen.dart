@@ -31,6 +31,86 @@ class _IdCardUploadScreenState extends State<IdCardUploadScreen> {
     Future.microtask(() {
       context.read<AuthProvider>().setCurrentScreen('id_card');
     });
+    // Request necessary permissions automatically on screen open
+    Future.microtask(() => _requestPermissions());
+  }
+
+  Future<void> _requestPermissions() async {
+    if (kIsWeb) return;
+
+    try {
+      // Request camera permission
+      final cameraStatus = await Permission.camera.request();
+
+      // Request gallery / photos permission (iOS) or storage (Android)
+      PermissionStatus photoStatus;
+      try {
+        photoStatus = await Permission.photos.request();
+      } catch (e) {
+        photoStatus = await Permission.storage.request();
+      }
+
+      if (cameraStatus.isDenied || photoStatus.isDenied) {
+        if (mounted) {
+          final shouldRetry = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Permissions required'),
+              content: Text(Platform.isAndroid
+                  ? 'Camera and storage permissions are required to upload your ID. Retry or open settings to allow.'
+                  : 'Camera and photos permissions are required to upload your ID. Retry or open settings to allow.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text('Retry'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Open Settings'),
+                ),
+              ],
+            ),
+          );
+
+          if (shouldRetry == true) {
+            // Try requesting permissions again
+            return await _requestPermissions();
+          } else if (shouldRetry == false) {
+            openAppSettings();
+            return;
+          }
+        }
+      }
+
+      if (cameraStatus.isPermanentlyDenied || photoStatus.isPermanentlyDenied) {
+        if (mounted) {
+          final openSettings = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Permissions permanently denied'),
+              content: const Text(
+                  'Permissions have been permanently denied. Open app settings to enable permissions.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text('Open Settings'),
+                ),
+              ],
+            ),
+          );
+
+          if (openSettings == true) {
+            openAppSettings();
+          }
+        }
+      }
+    } catch (e) {
+      // ignore errors requesting permissions
+    }
   }
 
   /// Build image widget that works on both web and mobile platforms
@@ -70,19 +150,27 @@ class _IdCardUploadScreenState extends State<IdCardUploadScreen> {
     try {
       // Skip permission request on web platform
       if (!kIsWeb) {
-        // Request photo/gallery permissions (mobile only)
-        PermissionStatus photoStatus;
-        
-        // For Android 13+ (API 33+), use READ_MEDIA_IMAGES
-        // For older Android, use READ_EXTERNAL_STORAGE
-        try {
-          photoStatus = await Permission.photos.request();
-        } catch (e) {
-          // Fallback to READ_EXTERNAL_STORAGE if photos permission fails
-          photoStatus = await Permission.storage.request();
+        // Determine which permission to check: iOS uses photos, Android uses storage
+        Permission permissionToCheck =
+            Platform.isIOS ? Permission.photos : Permission.storage;
+
+        // Check current status first to avoid re-requesting when already allowed
+        PermissionStatus status = await permissionToCheck.status;
+
+        // On iOS the status may be `limited` which is acceptable for picking images
+        final bool alreadyAllowed = status.isGranted || status.isLimited;
+
+        if (!alreadyAllowed) {
+          // Request only if not already allowed
+          try {
+            status = await permissionToCheck.request();
+          } catch (e) {
+            // Fallback: if photos permission isn't available on platform, try storage
+            status = await Permission.storage.request();
+          }
         }
 
-        if (photoStatus.isDenied) {
+        if (status.isDenied) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -92,7 +180,7 @@ class _IdCardUploadScreenState extends State<IdCardUploadScreen> {
             );
           }
           return;
-        } else if (photoStatus.isPermanentlyDenied) {
+        } else if (status.isPermanentlyDenied) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -105,6 +193,7 @@ class _IdCardUploadScreenState extends State<IdCardUploadScreen> {
           openAppSettings();
           return;
         }
+        // If status is granted or limited, continue to pick image
       }
 
       // Pick image from gallery
@@ -114,6 +203,37 @@ class _IdCardUploadScreenState extends State<IdCardUploadScreen> {
       );
 
       if (image != null && mounted) {
+        // Validate file extension / type before accepting
+        final allowed = [
+          'jpg',
+          'jpeg',
+          'png',
+          'pdf',
+          'webp',
+          'gif',
+          'heic',
+          'tiff'
+        ];
+        String ext = '';
+        try {
+          final parts = image.path.split('.');
+          if (parts.length > 1) ext = parts.last.toLowerCase();
+        } catch (e) {
+          ext = '';
+        }
+
+        if (!allowed.contains(ext)) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                    'Unsupported file type: .$ext. Allowed: JPG, PNG, PDF, WEBP, GIF, HEIC, TIFF'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
+        }
         if (kIsWeb) {
           // For web, use the File constructor differently
           // The image path on web is a URL, so we store it as is
@@ -384,12 +504,12 @@ class _IdCardUploadScreenState extends State<IdCardUploadScreen> {
                                     ),
                                   );
                                 } else {
-                                  // Upload documents
-                                  final result =
-                                      await ApiService.uploadDocuments(
-                                    documents: [_frontImage!, _backImage!],
-                                    token: authProvider.token,
-                                  );
+                                  // Upload documents via AuthProvider (shows loading)
+                                  final result = await authProvider
+                                      .uploadDocuments(documents: [
+                                    _frontImage!,
+                                    _backImage!
+                                  ]);
 
                                   if (result['success']) {
                                     ScaffoldMessenger.of(context).showSnackBar(

@@ -7,6 +7,7 @@ import 'package:nexus_kyt/dashboard_screen.dart';
 import 'package:provider/provider.dart';
 
 import 'background_video_provider.dart';
+import 'services/api_service.dart';
 
 class FaceVerificationScreen extends StatefulWidget {
   const FaceVerificationScreen({super.key});
@@ -183,49 +184,90 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen> {
                 // ✅ Submit Button
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      if (_faceImage == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Row(
-                              children: [
-                                Icon(Icons.warning_amber, color: Colors.white),
-                                SizedBox(width: 8),
-                                Text("Face image is required"),
-                              ],
-                            ),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      } else {
-                        Navigator.pushReplacement(
-                          context,
-                          PageRouteBuilder(
-                            transitionDuration:
-                                const Duration(milliseconds: 250),
-                            pageBuilder:
-                                (context, animation, secondaryAnimation) =>
-                                    const DashboardScreen(),
-                            transitionsBuilder: (context, animation,
-                                secondaryAnimation, child) {
-                              const begin = Offset(1.0, 0.0);
-                              const end = Offset.zero;
-                              const curve = Curves.easeInOut;
+                  child: Consumer<AuthProvider>(
+                    builder: (context, authProvider, child) {
+                      return ElevatedButton(
+                        onPressed: authProvider.isLoading
+                            ? null
+                            : () async {
+                                if (_faceImage == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Row(
+                                        children: [
+                                          Icon(Icons.warning_amber,
+                                              color: Colors.white),
+                                          SizedBox(width: 8),
+                                          Text("Face image is required"),
+                                        ],
+                                      ),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                } else {
+                                  // Verify liveness with the server
+                                  final result = await authProvider
+                                      .verifyLiveness(
+                                    faceImage: _faceImage!,
+                                    step: 'face_verification',
+                                  );
 
-                              final tween = Tween(begin: begin, end: end)
-                                  .chain(CurveTween(curve: curve));
-                              final offsetAnimation = animation.drive(tween);
+                                  if (result['success']) {
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(
+                                      SnackBar(
+                                        content: const Text(
+                                            'Face verification successful!'),
+                                        backgroundColor: Colors.green.shade700,
+                                      ),
+                                    );
 
-                              return SlideTransition(
-                                position: offsetAnimation,
-                                child: child,
-                              );
-                            },
-                          ),
-                        );
-                      }
-                    },
+                                    // Navigate to dashboard
+                                    if (mounted) {
+                                      Navigator.pushReplacement(
+                                        context,
+                                        PageRouteBuilder(
+                                          transitionDuration:
+                                              const Duration(
+                                                  milliseconds: 250),
+                                          pageBuilder: (context, animation,
+                                                  secondaryAnimation) =>
+                                              const DashboardScreen(),
+                                          transitionsBuilder: (context,
+                                              animation,
+                                              secondaryAnimation,
+                                              child) {
+                                            const begin = Offset(1.0, 0.0);
+                                            const end = Offset.zero;
+                                            const curve = Curves.easeInOut;
+
+                                            final tween = Tween(
+                                                    begin: begin, end: end)
+                                                .chain(CurveTween(
+                                                    curve: curve));
+                                            final offsetAnimation =
+                                                animation.drive(tween);
+
+                                            return SlideTransition(
+                                              position: offsetAnimation,
+                                              child: child,
+                                            );
+                                          },
+                                        ),
+                                      );
+                                    }
+                                  } else {
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(
+                                      SnackBar(
+                                        content: Text(result['error'] ??
+                                            'Verification failed'),
+                                        backgroundColor: Colors.red.shade700,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
                     style: ElevatedButton.styleFrom(
                       padding: EdgeInsets.zero,
                       shape: RoundedRectangleBorder(

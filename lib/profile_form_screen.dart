@@ -553,12 +553,9 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                                             "disability": disability ?? "",
                                           };
 
-                                          // Submit to API with token
-                                          final result =
-                                              await ApiService.submitIdentity(
-                                            data: profileData,
-                                            token: authProvider.token,
-                                          );
+                                          // Submit to API via AuthProvider so loading state is handled
+                                          final result = await authProvider
+                                              .submitProfile(data: profileData);
 
                                           if (result['success']) {
                                             ScaffoldMessenger.of(context)
