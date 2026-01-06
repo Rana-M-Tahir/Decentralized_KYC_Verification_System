@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:nexus_kyt/face_verification_screen.dart';
+import 'package:nexus_kyt/login_screen.dart';
 import 'package:nexus_kyt/services/api_service.dart';
 import 'package:nexus_kyt/auth_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -284,10 +285,18 @@ class _IdCardUploadScreenState extends State<IdCardUploadScreen> {
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body:
-
-          // 🖊️ Foreground form
-          BlockchainBackground(
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const login_screen()),
+          ),
+        ),
+      ),
+      body: BlockchainBackground(
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),

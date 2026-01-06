@@ -4,6 +4,7 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:nexus_kyt/auth_provider.dart';
 import 'package:nexus_kyt/camera_capture_provider.dart';
 import 'package:nexus_kyt/dashboard_screen.dart';
+import 'package:nexus_kyt/login_screen.dart';
 import 'package:provider/provider.dart';
 
 import 'background_video_provider.dart';
@@ -47,10 +48,18 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen> {
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body:
-
-          // 🖊️ Foreground UI
-          BlockchainBackground(
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const login_screen()),
+          ),
+        ),
+      ),
+      body: BlockchainBackground(
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -185,117 +194,111 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: Consumer<AuthProvider>(
-                    builder: (context, authProvider, child) {
-                      return ElevatedButton(
-                        onPressed: authProvider.isLoading
-                            ? null
-                            : () async {
-                                if (_faceImage == null) {
+                    builder: (context, authProvider, child) => ElevatedButton(
+                      onPressed: authProvider.isLoading
+                          ? null
+                          : () async {
+                              if (_faceImage == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Row(
+                                      children: [
+                                        Icon(Icons.warning_amber,
+                                            color: Colors.white),
+                                        SizedBox(width: 8),
+                                        Text("Face image is required"),
+                                      ],
+                                    ),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              } else {
+                                // Verify liveness with the server
+                                final result =
+                                    await authProvider.verifyLiveness(
+                                  faceImage: _faceImage!,
+                                  step: 'face_verification',
+                                );
+
+                                if (result['success']) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Row(
-                                        children: [
-                                          Icon(Icons.warning_amber,
-                                              color: Colors.white),
-                                          SizedBox(width: 8),
-                                          Text("Face image is required"),
-                                        ],
-                                      ),
-                                      backgroundColor: Colors.red,
+                                    SnackBar(
+                                      content: const Text(
+                                          'Face verification successful!'),
+                                      backgroundColor: Colors.green.shade700,
                                     ),
                                   );
-                                } else {
-                                  // Verify liveness with the server
-                                  final result = await authProvider
-                                      .verifyLiveness(
-                                    faceImage: _faceImage!,
-                                    step: 'face_verification',
-                                  );
 
-                                  if (result['success']) {
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(
-                                      SnackBar(
-                                        content: const Text(
-                                            'Face verification successful!'),
-                                        backgroundColor: Colors.green.shade700,
-                                      ),
-                                    );
+                                  // Navigate to dashboard
+                                  if (mounted) {
+                                    Navigator.pushReplacement(
+                                      context,
+                                      PageRouteBuilder(
+                                        transitionDuration:
+                                            const Duration(milliseconds: 250),
+                                        pageBuilder: (context, animation,
+                                                secondaryAnimation) =>
+                                            const DashboardScreen(),
+                                        transitionsBuilder: (context, animation,
+                                            secondaryAnimation, child) {
+                                          const begin = Offset(1.0, 0.0);
+                                          const end = Offset.zero;
+                                          const curve = Curves.easeInOut;
 
-                                    // Navigate to dashboard
-                                    if (mounted) {
-                                      Navigator.pushReplacement(
-                                        context,
-                                        PageRouteBuilder(
-                                          transitionDuration:
-                                              const Duration(
-                                                  milliseconds: 250),
-                                          pageBuilder: (context, animation,
-                                                  secondaryAnimation) =>
-                                              const DashboardScreen(),
-                                          transitionsBuilder: (context,
-                                              animation,
-                                              secondaryAnimation,
-                                              child) {
-                                            const begin = Offset(1.0, 0.0);
-                                            const end = Offset.zero;
-                                            const curve = Curves.easeInOut;
+                                          final tween = Tween(
+                                                  begin: begin, end: end)
+                                              .chain(CurveTween(curve: curve));
+                                          final offsetAnimation =
+                                              animation.drive(tween);
 
-                                            final tween = Tween(
-                                                    begin: begin, end: end)
-                                                .chain(CurveTween(
-                                                    curve: curve));
-                                            final offsetAnimation =
-                                                animation.drive(tween);
-
-                                            return SlideTransition(
-                                              position: offsetAnimation,
-                                              child: child,
-                                            );
-                                          },
-                                        ),
-                                      );
-                                    }
-                                  } else {
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(
-                                      SnackBar(
-                                        content: Text(result['error'] ??
-                                            'Verification failed'),
-                                        backgroundColor: Colors.red.shade700,
+                                          return SlideTransition(
+                                            position: offsetAnimation,
+                                            child: child,
+                                          );
+                                        },
                                       ),
                                     );
                                   }
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(result['error'] ??
+                                          'Verification failed'),
+                                      backgroundColor: Colors.red.shade700,
+                                    ),
+                                  );
                                 }
-                              },
-                    style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                    ),
-                    child: Ink(
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [
-                            Color.fromARGB(255, 18, 18, 111), // Dark Blue
-                            Color(0xFF1cb5e0), // Light Blue
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        borderRadius: BorderRadius.circular(8),
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
                       ),
-                      child: Container(
-                        alignment: Alignment.center,
-                        height: MediaQuery.of(context).size.height * 0.065,
-                        child: const Text(
-                          'Submit',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                      child: Ink(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color.fromARGB(255, 18, 18, 111), // Dark Blue
+                              Color(0xFF1cb5e0), // Light Blue
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Container(
+                          alignment: Alignment.center,
+                          height: MediaQuery.of(context).size.height * 0.065,
+                          child: const Text(
+                            'Submit',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
@@ -303,6 +306,8 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen> {
                   ),
                 ),
               ],
+              // children: [
+              // ],
             ),
           ),
         ),

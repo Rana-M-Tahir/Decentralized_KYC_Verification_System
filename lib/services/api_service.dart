@@ -58,6 +58,47 @@ class ApiService {
     }
   }
 
+  // Login user with email and password
+  static Future<Map<String, dynamic>> login({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/auth/login'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+        }),
+      );
+
+      final jsonResponse = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': jsonResponse['message'] ?? 'Login successful',
+          'data': jsonResponse['data'],
+          'token': jsonResponse['data']?['token'],
+          'user': jsonResponse['data']?['user'],
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonResponse['message'] ?? 'Login failed',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Network error: $e',
+      };
+    }
+  }
+
   // Submit identity/profile data to /api/identity/submit
   static Future<Map<String, dynamic>> submitIdentity({
     required Map<String, dynamic> data,

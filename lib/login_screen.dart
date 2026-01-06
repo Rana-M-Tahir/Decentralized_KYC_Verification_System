@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:nexus_kyt/auth_provider.dart';
 import 'package:nexus_kyt/background_video_provider.dart';
+import 'package:nexus_kyt/dashboard_screen.dart';
 import 'package:nexus_kyt/profile_form_screen.dart';
 import 'package:nexus_kyt/signup_screen.dart';
 import 'package:provider/provider.dart';
@@ -162,7 +163,7 @@ class _Login_ScreenState extends State<login_screen> {
                                         const Duration(milliseconds: 250),
                                     pageBuilder: (context, animation,
                                             secondaryAnimation) =>
-                                        const ProfileFormScreen(),
+                                        const DashboardScreen(),
                                     transitionsBuilder: (context, animation,
                                         secondaryAnimation, child) {
                                       const begin = Offset(1.0, 0.0);

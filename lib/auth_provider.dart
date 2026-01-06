@@ -65,20 +65,25 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // Example login - replace with real API call
+  // Login with email and password using API
   Future<bool> login({required String email, required String password}) async {
     _setLoading(true);
     _error = null;
     try {
-      // TODO: replace with your real API call
-      await Future.delayed(const Duration(seconds: 2));
-      // fake success condition:
-      if (email.isNotEmpty && password.isNotEmpty) {
-        _token = "dummy_token"; // store real token here
+      final result = await ApiService.login(
+        email: email,
+        password: password,
+      );
+
+      if (result['success']) {
+        // Extract token from response
+        _token = result['token'];
+        await _saveToken(_token!); // Save token to local storage
+        await setCurrentScreen('profile_form'); // Start at ProfileFormScreen
         notifyListeners();
         return true;
       } else {
-        _error = "Invalid credentials";
+        _error = result['error'] ?? 'Login failed';
         return false;
       }
     } catch (e) {

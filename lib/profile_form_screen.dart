@@ -4,6 +4,7 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:nexus_kyt/auth_provider.dart';
 import 'package:nexus_kyt/background_video_provider.dart';
 import 'package:nexus_kyt/id_card_screen.dart';
+import 'package:nexus_kyt/login_screen.dart';
 import 'package:nexus_kyt/services/api_service.dart';
 import 'package:provider/provider.dart';
 
@@ -95,6 +96,17 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const login_screen()),
+          ),
+        ),
+      ),
       body: BlockchainBackground(
         child: SafeArea(
           child: SingleChildScrollView(
