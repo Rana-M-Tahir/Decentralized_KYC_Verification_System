@@ -9,6 +9,7 @@ class AuthProvider extends ChangeNotifier {
   String? _token; // optionally store token
   String? _currentScreen; // Track current screen during info collection
   bool _isInitialized = false;
+  Map<String, dynamic>? _userData;
 
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -16,6 +17,7 @@ class AuthProvider extends ChangeNotifier {
   String? get token => _token;
   String? get currentScreen => _currentScreen;
   bool get isInitialized => _isInitialized;
+  Map<String, dynamic>? get userData => _userData;
 
   // Initialize authentication state and current screen from local storage
   Future<void> initializeAuth() async {
@@ -126,6 +128,50 @@ class AuthProvider extends ChangeNotifier {
       return false;
     } finally {
       _setLoading(false);
+    }
+  }
+
+  // Wallet Login
+  Future<bool> walletLogin({required String walletAddress}) async {
+    _setLoading(true);
+    _error = null;
+    try {
+      final result = await ApiService.walletLogin(
+        walletAddress: walletAddress,
+        token: _token,
+      );
+
+      if (result['success']) {
+        // Update token if returned
+        if (result['token'] != null) {
+          _token = result['token'];
+          await _saveToken(_token!);
+        }
+        notifyListeners();
+        return true;
+      } else {
+        _error = result['error'] ?? 'Wallet login failed';
+        return false;
+      }
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Fetch current user data
+  Future<void> fetchUser() async {
+    if (_token == null) return;
+    try {
+      final result = await ApiService.getMe(_token!);
+      if (result['success']) {
+        _userData = result['data']['user'];
+        notifyListeners();
+      }
+    } catch (e) {
+      print('Error fetching user: $e');
     }
   }
 

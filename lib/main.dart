@@ -3,11 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:nexus_kyt/auth_provider.dart';
 import 'package:nexus_kyt/background_video_provider.dart';
+import 'package:nexus_kyt/crypto_provider.dart';
 import 'package:nexus_kyt/dashboard_screen.dart';
 import 'package:nexus_kyt/face_verification_screen.dart';
 import 'package:nexus_kyt/id_card_screen.dart' as id_card;
 import 'package:nexus_kyt/login_screen.dart';
+import 'package:nexus_kyt/news_provider.dart';
 import 'package:nexus_kyt/profile_form_screen.dart';
+import 'package:nexus_kyt/transaction_provider.dart';
 import 'package:provider/provider.dart';
 
 void main() {
@@ -36,6 +39,9 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => BackgroundVideoProvider()),
+        ChangeNotifierProvider(create: (_) => NewsProvider()),
+        ChangeNotifierProvider(create: (_) => CryptoProvider()),
+        ChangeNotifierProvider(create: (_) => TransactionProvider()),
         // add other providers later
       ],
       child: const MyApp(),

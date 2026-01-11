@@ -1,16 +1,19 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 
 class ApiService {
   // Use the provided LAN IP for all API calls
-  static const String baseUrl = 'http://192.168.100.103:4000';
 
+  static const String baseUrl =
+      kIsWeb ? 'http://localhost:4000' : 'http://192.168.100.103:4000';
   static const String registerEndpoint = '/api/auth/register';
 
   static Map<String, String> _headers([String? token]) {
     final headers = {
       'Content-Type': 'application/json',
+      'accept': '*/*',
     };
     if (token != null && token.isNotEmpty) {
       headers['Authorization'] = 'Bearer $token';
@@ -89,6 +92,73 @@ class ApiService {
         return {
           'success': false,
           'error': jsonResponse['message'] ?? 'Login failed',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Network error: $e',
+      };
+    }
+  }
+
+  // Wallet Login
+  static Future<Map<String, dynamic>> walletLogin({
+    required String walletAddress,
+    String? token,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/auth/wallet-login'),
+        headers: _headers(token),
+        body: jsonEncode({
+          'walletAddress': walletAddress,
+        }),
+      );
+
+      final jsonResponse = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': jsonResponse['message'] ?? 'Wallet login successful',
+          'data': jsonResponse['data'],
+          'token': jsonResponse['data']?['token'],
+          'user': jsonResponse['data']?['user'],
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonResponse['message'] ?? 'Wallet login failed',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Network error: $e',
+      };
+    }
+  }
+
+  // Get current user info
+  static Future<Map<String, dynamic>> getMe(String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/auth/me'),
+        headers: _headers(token),
+      );
+
+      final jsonResponse = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': jsonResponse['data'],
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonResponse['message'] ?? 'Failed to fetch user data',
         };
       }
     } catch (e) {
